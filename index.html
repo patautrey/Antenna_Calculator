@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Telescopic Antenna Calculator</title>
+<style>
+    body { font-family: Arial; margin: 40px; background: #f4f4f4; }
+    .box { background: white; padding: 20px; border-radius: 10px; width: 420px; }
+    input { width: 120px; padding: 6px; font-size: 16px; }
+    .result { margin-top: 15px; font-size: 18px; }
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2>Telescopic Antenna Calculator</h2>
+
+<label>Frequency (MHz): </label>
+<input id="freq" type="number" step="0.01" oninput="calc()">
+
+<div class="result" id="out"></div>
+</div>
+
+<script>
+function calc() {
+    let f = parseFloat(document.getElementById("freq").value);
+    if (!f) { document.getElementById("out").innerHTML = ""; return; }
+
+    let lambda = 300 / f;
+
+    let driven_m = 0.237 * lambda;
+    let refl_m   = 0.251 * lambda;
+    let space_m  = 0.190 * lambda;
+
+    let driven_ft = driven_m * 3.28084;
+    let refl_ft   = refl_m * 3.28084;
+    let space_ft  = space_m * 3.28084;
+
+    document.getElementById("out").innerHTML = `
+        <b>Driven Element:</b> ${driven_m.toFixed(3)} m (${driven_ft.toFixed(2)} ft)<br>
+        <b>Reflector:</b> ${refl_m.toFixed(3)} m (${refl_ft.toFixed(2)} ft)<br>
+        <b>Spacing:</b> ${space_m.toFixed(3)} m (${space_ft.toFixed(2)} ft)
+    `;
+}
+</script>
+
+</body>
+</html>
