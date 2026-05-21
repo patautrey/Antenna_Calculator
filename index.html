@@ -2,20 +2,42 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Telescopic Antenna Calculator</title>
+<title>Antenna Calculator</title>
 <style>
-    body { font-family: Arial; margin: 40px; background: #f4f4f4; }
-    .box { background: white; padding: 20px; border-radius: 10px; width: 420px; }
-    input { width: 120px; padding: 6px; font-size: 16px; }
-    .result { margin-top: 15px; font-size: 18px; }
+    body { 
+        font-family: Arial, sans-serif; 
+        margin: 40px; 
+        background: #eef2f3; 
+        display: flex;
+        justify-content: center;
+    }
+    .box { 
+        background: white; 
+        padding: 25px; 
+        border-radius: 12px; 
+        width: 420px; 
+        box-shadow: 0 0 12px rgba(0,0,0,0.15);
+    }
+    input { 
+        width: 150px; 
+        padding: 8px; 
+        font-size: 18px; 
+        margin-top: 8px;
+    }
+    .result { 
+        margin-top: 20px; 
+        font-size: 18px; 
+        line-height: 1.6;
+    }
 </style>
 </head>
 <body>
 
 <div class="box">
 <h2>Telescopic Antenna Calculator</h2>
+<p>Enter a frequency in MHz to calculate the driven element, reflector, and spacing.</p>
 
-<label>Frequency (MHz): </label>
+<label><b>Frequency (MHz):</b></label><br>
 <input id="freq" type="number" step="0.01" oninput="calc()">
 
 <div class="result" id="out"></div>
@@ -24,14 +46,20 @@
 <script>
 function calc() {
     let f = parseFloat(document.getElementById("freq").value);
-    if (!f) { document.getElementById("out").innerHTML = ""; return; }
+    if (!f) { 
+        document.getElementById("out").innerHTML = ""; 
+        return; 
+    }
 
+    // Wavelength in meters
     let lambda = 300 / f;
 
+    // Multipliers
     let driven_m = 0.237 * lambda;
     let refl_m   = 0.251 * lambda;
     let space_m  = 0.190 * lambda;
 
+    // Convert to feet
     let driven_ft = driven_m * 3.28084;
     let refl_ft   = refl_m * 3.28084;
     let space_ft  = space_m * 3.28084;
