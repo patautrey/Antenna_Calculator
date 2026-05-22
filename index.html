@@ -39,6 +39,9 @@
 <input type="number" id="freq" value="146.000" step="0.001">
 <br><br>
 
+<label><input type="checkbox" id="useReflector"> Add Reflector</label>
+<br><br>
+
 <label>Number of Directors:</label>
 <select id="directors">
   <option value="0" selected>0</option>
@@ -46,6 +49,9 @@
   <option value="2">2</option>
   <option value="3">3</option>
 </select>
+<br><br>
+
+<label><input type="checkbox" id="elevatedRadials"> Elevated Radials (0.05 λ above ground)</label>
 
 <h2 id="gainLine"></h2>
 
@@ -69,37 +75,64 @@ function toFeetInches(m) {
   return `${feet} ft ${Math.floor(inches)} ${frac}/16 in`;
 }
 
-function calcGain(nDir) {
-  if (nDir === 0) return 2.1;
-  if (nDir === 1) return 4.0;
-  if (nDir === 2) return 5.0;
-  return 5.5;
+function baseGain(nDir, hasRef) {
+  if (!hasRef && nDir === 0) return 2.1;
+  if (hasRef && nDir === 0) return 5.0;
+  if (hasRef && nDir === 1) return 6.0;
+  if (hasRef && nDir === 2) return 6.7;
+  if (hasRef && nDir === 3) return 7.0;
+  if (!hasRef && nDir === 1) return 4.0;
+  if (!hasRef && nDir === 2) return 4.8;
+  if (!hasRef && nDir === 3) return 5.2;
+  return 2.1;
 }
 
 function calculate() {
   let fMHz = parseFloat(document.getElementById("freq").value);
   let nDir = parseInt(document.getElementById("directors").value);
+  let hasRef = document.getElementById("useReflector").checked;
+  let elevated = document.getElementById("elevatedRadials").checked;
 
   let c = 299792458;
   let lambda = c / (fMHz * 1e6);
 
   let drivenLen = 0.48 * lambda;
-  let directorLen = 0.45 * lambda;
-  let spacing = 0.10 * lambda;
+  let refLen    = 0.52 * lambda;
+  let dirLen    = 0.45 * lambda;
 
-  let totalHeight = nDir * spacing;
-  let gain = calcGain(nDir);
+  let refSpacing = 0.15 * lambda;
+  let dirSpacing = 0.10 * lambda;
+
+  let radialLen  = 0.25 * lambda;
+  let radialHt   = 0.05 * lambda;
+
+  let back = hasRef ? refSpacing : 0;
+  let front = nDir * dirSpacing;
+  let totalSpan = back + front;
+
+  let gain = baseGain(nDir, hasRef);
+  if (elevated) gain += 0.8;
+
+  let radialSystemText = elevated
+    ? `Elevated (0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)})`
+    : `Ground-mounted`;
+
+  let radialCountText = elevated ? `2–4 radials per element` : `4+ radials per element`;
 
   document.getElementById("gainLine").innerHTML =
-    `${gain.toFixed(1)} dBi — passive vertical array with ${nDir} director(s) at ${fMHz.toFixed(3)} MHz`;
+    `${gain.toFixed(1)} dBi — vertical Yagi configuration at ${fMHz.toFixed(3)} MHz`;
 
   document.getElementById("summary").innerHTML = `
-    <b>Passive Vertical Array</b><br>
+    <b>Passive Vertical / Vertical Yagi Array</b><br>
     Frequency: ${fMHz.toFixed(3)} MHz<br>
     Wavelength: ${lambda.toFixed(3)} m = ${toFeetInches(lambda)}<br>
     Driven Element Length: ${drivenLen.toFixed(3)} m = ${toFeetInches(drivenLen)}<br>
-    Director Count: ${nDir}<br>
-    Total Vertical Spacing (boom height): ≈ ${totalHeight.toFixed(3)} m = ${toFeetInches(totalHeight)}
+    Reflector: ${hasRef ? "Yes" : "No"}<br>
+    Directors: ${nDir}<br>
+    Total Front-to-Back Span: ≈ ${totalSpan.toFixed(3)} m = ${toFeetInches(totalSpan)}<br>
+    Radial System: ${radialSystemText}<br>
+    Radial Length (¼ λ): ${radialLen.toFixed(3)} m = ${toFeetInches(radialLen)}<br>
+    Radials per Element: ${radialCountText}
   `;
 
   let html = `<table>
@@ -107,26 +140,49 @@ function calculate() {
       <th>Element</th>
       <th>Length (m)</th>
       <th>Length (ft/in)</th>
-      <th>Spacing from Driven (m)</th>
-      <th>Spacing from Driven (ft/in)</th>
+      <th>Position (m)</th>
+      <th>Position (ft/in)</th>
+      <th>Radial Length (m)</th>
+      <th>Radial Length (ft/in)</th>
+      <th>Radial Height</th>
     </tr>`;
+
+  if (hasRef) {
+    let pos = -refSpacing;
+    html += `<tr>
+      <td>Reflector</td>
+      <td>${refLen.toFixed(3)}</td>
+      <td>${toFeetInches(refLen)}</td>
+      <td>${pos.toFixed(3)}</td>
+      <td>${toFeetInches(pos)}</td>
+      <td>${radialLen.toFixed(3)}</td>
+      <td>${toFeetInches(radialLen)}</td>
+      <td>${elevated ? `0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)}` : "Ground-mounted"}</td>
+    </tr>`;
+  }
 
   html += `<tr>
-      <td>Driven</td>
-      <td>${drivenLen.toFixed(3)}</td>
-      <td>${toFeetInches(drivenLen)}</td>
-      <td>0.000</td>
-      <td>0 ft 0 0/16 in</td>
-    </tr>`;
+    <td>Driven</td>
+    <td>${drivenLen.toFixed(3)}</td>
+    <td>${toFeetInches(drivenLen)}</td>
+    <td>0.000</td>
+    <td>0 ft 0 0/16 in</td>
+    <td>${radialLen.toFixed(3)}</td>
+    <td>${toFeetInches(radialLen)}</td>
+    <td>${elevated ? `0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)}` : "Ground-mounted"}</td>
+  </tr>`;
 
   for (let i = 1; i <= nDir; i++) {
-    let dist = i * spacing;
+    let pos = i * dirSpacing;
     html += `<tr>
       <td>Director ${i}</td>
-      <td>${directorLen.toFixed(3)}</td>
-      <td>${toFeetInches(directorLen)}</td>
-      <td>${dist.toFixed(3)}</td>
-      <td>${toFeetInches(dist)}</td>
+      <td>${dirLen.toFixed(3)}</td>
+      <td>${toFeetInches(dirLen)}</td>
+      <td>${pos.toFixed(3)}</td>
+      <td>${toFeetInches(pos)}</td>
+      <td>${radialLen.toFixed(3)}</td>
+      <td>${toFeetInches(radialLen)}</td>
+      <td>${elevated ? `0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)}` : "Ground-mounted"}</td>
     </tr>`;
   }
 
@@ -137,37 +193,58 @@ function calculate() {
     <b>How to Build This Antenna</b><br><br>
 
     <b>1. Each element requires its own radial field</b><br>
-    • Every vertical (driven + directors) must have a ¼‑wave radial system.<br>
-    • Use at least 4 radials per element, evenly spaced.<br>
-    • All radials should be the same length and height.<br><br>
+    Every vertical element — driven, reflector, and directors — must have its own ¼‑wave radial system.
+    Without radials, elements become lossy and detuned, and the array will not produce the modeled gain.<br><br>
 
-    <b>2. Only the driven element connects to the coax</b><br>
-    • Directors are passive and isolated.<br>
-    • They work by mutual coupling, just like Yagi directors.<br><br>
+    <b>2. Elevated Radials</b><br>
+    When selected, radials are raised 0.05 λ above ground
+    (${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)}). Only 2–4 radials per element are needed.
+    Elevated radials reduce ground loss, improve efficiency, stabilize impedance, and increase gain by ~0.8 dB.<br><br>
 
-    <b>3. A 1:1 current choke is recommended</b><br>
-    • Prevents the coax from becoming a third radiator.<br>
-    • Place the choke at the feedpoint of the driven element.<br>
-    • Ferrite option: 8–12 turns through two FT240‑31 cores.<br>
-    • Air‑wound option: 6–8 turns on a 4–6 inch form.<br><br>
+    <b>3. Choke Placement with Elevated Radials</b><br>
+    When radials are elevated, the feedpoint is elevated too. The 1:1 current choke must be mounted
+    <u>at the same height as the elevated radials</u>, attached to the mast at this height.
+    Route the coax straight down the mast for at least 0.25 λ before any bends to prevent the feedline
+    from becoming a radiator.<br><br>
 
-    <b>4. Alignment and spacing</b><br>
-    • All elements must be vertical, parallel, and in a straight line.<br>
-    • Spacing = 0.10 λ between each element.<br><br>
+    <b>4. Only the driven element connects to the coax</b><br>
+    Reflector and directors are passive and isolated. They work by mutual coupling, like a horizontal Yagi.<br><br>
 
-    <b>5. Mounting notes</b><br>
-    • Use non‑conductive supports (PVC, fiberglass).<br>
-    • Keep metal at least 0.1 λ away from elements.<br>
-    • If using a mast, place it behind the driven element.
+    <b>5. A 1:1 current choke is strongly recommended</b><br>
+    Prevents coax radiation and pattern distortion. Use FT240‑31 ferrites or an air‑wound choke.<br><br>
+
+    <b>6. Alignment and spacing</b><br>
+    • All elements vertical and parallel<br>
+    • Reflector: 0.15 λ behind driven<br>
+    • Directors: 0.10 λ in front of driven or previous director<br><br>
+
+    <b>7. Mounting notes</b><br>
+    • Use non‑conductive supports<br>
+    • Keep metal 0.1 λ away<br>
+    • If using a mast, place it behind the reflector<br>
   `;
 }
 
 function downloadFile() {
   let fMHz = parseFloat(document.getElementById("freq").value);
   let nDir = parseInt(document.getElementById("directors").value);
+  let hasRef = document.getElementById("useReflector").checked;
+  let elevated = document.getElementById("elevatedRadials").checked;
+
   let c = 299792458;
   let lambda = c / (fMHz * 1e6);
-  let gain = calcGain(nDir);
+  let radialLen  = 0.25 * lambda;
+  let radialHt   = 0.05 * lambda;
+
+  let gain = baseGain(nDir, hasRef);
+  let effBoost = elevated ? 0.8 : 0.0;
+  let finalGain = gain + effBoost;
+
+  let radialSystemText = elevated
+    ? `Elevated (0.05 λ = ${radialHt.toFixed(3)} m = ${toFeetInches(radialHt)})`
+    : `Ground-mounted`;
+
+  let radialCountText = elevated ? `2–4 radials per element` : `4+ radials per element`;
 
   let summaryText = document.getElementById("summary").innerText;
 
@@ -182,19 +259,31 @@ ${summaryText}
 Build Summary
 Frequency: ${fMHz.toFixed(3)} MHz
 Wavelength: ${lambda.toFixed(3)} m = ${toFeetInches(lambda)}
+Reflector: ${hasRef ? "Yes" : "No"}
 Directors: ${nDir}
-Estimated Gain: ${gain.toFixed(1)} dBi
-Director Length: 0.45 λ
-Driven Length: 0.48 λ
+Base Gain: ${gain.toFixed(1)} dBi
+Elevated Radials: ${elevated ? "Enabled" : "Disabled"}
+Efficiency Boost: ${effBoost.toFixed(1)} dB
+Estimated Forward Gain: ${finalGain.toFixed(1)} dBi
+Radial System: ${radialSystemText}
+Radial Length (¼ λ): ${radialLen.toFixed(3)} m = ${toFeetInches(radialLen)}
+Radials per Element: ${radialCountText}
 
 -------------------------------------
 Construction Notes
-• Each element (driven + directors) requires its own ¼‑wave radial field.
+• Each element requires its own ¼‑wave radial field.
+• Elevated radials (if used): 0.05 λ above ground, 2–4 radials per element.
+• Ground radials (if not elevated): 4+ radials per element, ¼‑wave long.
+• Choke Placement with Elevated Radials:
+  - Mount the 1:1 current choke at the same height as the elevated radials (0.05 λ).
+  - Attach the choke to the mast at this height.
+  - Route coax straight down the mast for at least 0.25 λ.
 • Only the driven element connects to the coax.
-• Directors are passive and isolated.
-• A 1:1 current choke at the feedpoint is recommended.
-• All elements must be vertical, parallel, and equally spaced.
-• Use non‑conductive supports to avoid pattern distortion.
+• Reflector and directors are passive and isolated.
+• Use a 1:1 current choke at the feedpoint.
+• Reflector spacing: 0.15 λ behind driven.
+• Director spacing: 0.10 λ in front of driven or previous director.
+• Use non‑conductive supports; keep metal 0.1 λ away.
 -------------------------------------
 `;
 
@@ -207,6 +296,8 @@ Construction Notes
 
 document.getElementById("freq").addEventListener("input", calculate);
 document.getElementById("directors").addEventListener("change", calculate);
+document.getElementById("useReflector").addEventListener("change", calculate);
+document.getElementById("elevatedRadials").addEventListener("change", calculate);
 
 calculate();
 </script>
