@@ -14,6 +14,13 @@
     margin-bottom: 20px;
     font-size: 18px;
   }
+  .build-block {
+    background: #e8f4ff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 25px;
+    font-size: 17px;
+  }
   table { width: 100%; border-collapse: collapse; margin-top: 15px; }
   table, th, td { border: 1px solid #999; }
   th, td { padding: 8px; text-align: center; }
@@ -47,6 +54,8 @@
 <h2>Element Table</h2>
 <div id="tableContainer"></div>
 
+<div id="build" class="build-block"></div>
+
 <button class="download-btn" onclick="downloadFile()">Download Results</button>
 
 <script>
@@ -64,7 +73,7 @@ function calcGain(nDir) {
   if (nDir === 0) return 2.1;
   if (nDir === 1) return 4.0;
   if (nDir === 2) return 5.0;
-  return 5.5; // 3 directors
+  return 5.5;
 }
 
 function calculate() {
@@ -76,9 +85,9 @@ function calculate() {
 
   let drivenLen = 0.48 * lambda;
   let directorLen = 0.45 * lambda;
-  let spacing = 0.10 * lambda; // between verticals
+  let spacing = 0.10 * lambda;
 
-  let totalHeight = nDir === 0 ? 0 : nDir * spacing;
+  let totalHeight = nDir * spacing;
   let gain = calcGain(nDir);
 
   document.getElementById("gainLine").innerHTML =
@@ -123,6 +132,34 @@ function calculate() {
 
   html += `</table>`;
   document.getElementById("tableContainer").innerHTML = html;
+
+  document.getElementById("build").innerHTML = `
+    <b>How to Build This Antenna</b><br><br>
+
+    <b>1. Each element requires its own radial field</b><br>
+    • Every vertical (driven + directors) must have a ¼‑wave radial system.<br>
+    • Use at least 4 radials per element, evenly spaced.<br>
+    • All radials should be the same length and height.<br><br>
+
+    <b>2. Only the driven element connects to the coax</b><br>
+    • Directors are passive and isolated.<br>
+    • They work by mutual coupling, just like Yagi directors.<br><br>
+
+    <b>3. A 1:1 current choke is recommended</b><br>
+    • Prevents the coax from becoming a third radiator.<br>
+    • Place the choke at the feedpoint of the driven element.<br>
+    • Ferrite option: 8–12 turns through two FT240‑31 cores.<br>
+    • Air‑wound option: 6–8 turns on a 4–6 inch form.<br><br>
+
+    <b>4. Alignment and spacing</b><br>
+    • All elements must be vertical, parallel, and in a straight line.<br>
+    • Spacing = 0.10 λ between each element.<br><br>
+
+    <b>5. Mounting notes</b><br>
+    • Use non‑conductive supports (PVC, fiberglass).<br>
+    • Keep metal at least 0.1 λ away from elements.<br>
+    • If using a mast, place it behind the driven element.
+  `;
 }
 
 function downloadFile() {
@@ -149,6 +186,15 @@ Directors: ${nDir}
 Estimated Gain: ${gain.toFixed(1)} dBi
 Director Length: 0.45 λ
 Driven Length: 0.48 λ
+
+-------------------------------------
+Construction Notes
+• Each element (driven + directors) requires its own ¼‑wave radial field.
+• Only the driven element connects to the coax.
+• Directors are passive and isolated.
+• A 1:1 current choke at the feedpoint is recommended.
+• All elements must be vertical, parallel, and equally spaced.
+• Use non‑conductive supports to avoid pattern distortion.
 -------------------------------------
 `;
 
