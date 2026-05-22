@@ -6,27 +6,49 @@
 <style>
     body { 
         font-family: Arial, sans-serif; 
-        margin: 40px; 
+        margin: 0;
+        padding: 0;
         background: #eef2f3; 
         display: flex;
         justify-content: center;
     }
+
     .box { 
         background: white; 
-        padding: 25px; 
-        border-radius: 12px; 
-        width: 420px; 
-        box-shadow: 0 0 12px rgba(0,0,0,0.15);
+        padding: 30px; 
+        border-radius: 16px; 
+        width: 90%;
+        max-width: 600px;
+        margin-top: 30px;
+        box-shadow: 0 0 18px rgba(0,0,0,0.18);
     }
+
+    h2 {
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+
+    p {
+        font-size: 20px;
+        line-height: 1.4;
+    }
+
+    label {
+        font-size: 22px;
+    }
+
     input { 
-        width: 150px; 
-        padding: 8px; 
-        font-size: 18px; 
-        margin-top: 8px;
+        width: 100%;
+        padding: 14px; 
+        font-size: 24px; 
+        margin-top: 10px;
+        border-radius: 8px;
+        border: 2px solid #ccc;
     }
+
     .result { 
-        margin-top: 20px; 
-        font-size: 18px; 
+        margin-top: 25px; 
+        font-size: 26px; 
         line-height: 1.6;
     }
 </style>
@@ -51,15 +73,12 @@ function calc() {
         return; 
     }
 
-    // Wavelength in meters
     let lambda = 300 / f;
 
-    // Multipliers
     let driven_m = 0.237 * lambda;
     let refl_m   = 0.251 * lambda;
     let space_m  = 0.190 * lambda;
 
-    // Convert to feet
     let driven_ft = driven_m * 3.28084;
     let refl_ft   = refl_m * 3.28084;
     let space_ft  = space_m * 3.28084;
