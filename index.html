@@ -1,99 +1,168 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Antenna Calculator</title>
+<title>Passive Vertical Design Calculator — KG5IEF</title>
 <style>
-    body { 
-        font-family: Arial, sans-serif; 
-        margin: 0;
-        padding: 0;
-        background: #eef2f3; 
-        display: flex;
-        justify-content: center;
-    }
-
-    .box { 
-        background: white; 
-        padding: 40px; 
-        border-radius: 20px; 
-        width: 95%;
-        max-width: 750px;
-        margin-top: 40px;
-        margin-bottom: 40px;
-        box-shadow: 0 0 22px rgba(0,0,0,0.20);
-    }
-
-    h2 {
-        font-size: 42px;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-
-    p {
-        font-size: 26px;
-        line-height: 1.5;
-        text-align: center;
-    }
-
-    label {
-        font-size: 30px;
-    }
-
-    input { 
-        width: 100%;
-        padding: 20px; 
-        font-size: 32px; 
-        margin-top: 15px;
-        border-radius: 12px;
-        border: 3px solid #bbb;
-    }
-
-    .result { 
-        margin-top: 35px; 
-        font-size: 34px; 
-        line-height: 1.8;
-        text-align: left;
-    }
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  h1 { font-size: 28px; margin-bottom: 10px; }
+  h2 { margin-top: 30px; }
+  .summary-block {
+    background: #f0f0f0;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 18px;
+  }
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+  table, th, td { border: 1px solid #999; }
+  th, td { padding: 8px; text-align: center; }
+  .download-btn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+  }
 </style>
 </head>
 <body>
 
-<div class="box">
-<h2>Telescopic Antenna Calculator</h2>
-<p>Enter a frequency in MHz to calculate the driven element, reflector, and spacing.</p>
+<h1>KG5IEF — Passive Vertical Design Calculator</h1>
 
-<label><b>Frequency (MHz):</b></label><br>
-<input id="freq" type="number" step="0.01" oninput="calc()">
+<label>Frequency (MHz): </label>
+<input type="number" id="freq" value="146.000" step="0.001">
+<br><br>
 
-<div class="result" id="out"></div>
-</div>
+<label>Number of Directors:</label>
+<select id="directors">
+  <option value="0" selected>0</option>
+  <option value="1">1</option>
+  <option value="2">2</option>
+  <option value="3">3</option>
+</select>
+
+<h2 id="gainLine"></h2>
+
+<div id="summary" class="summary-block"></div>
+
+<h2>Element Table</h2>
+<div id="tableContainer"></div>
+
+<button class="download-btn" onclick="downloadFile()">Download Results</button>
 
 <script>
-function calc() {
-    let f = parseFloat(document.getElementById("freq").value);
-    if (!f) { 
-        document.getElementById("out").innerHTML = ""; 
-        return; 
-    }
-
-    let lambda = 300 / f;
-
-    let driven_m = 0.237 * lambda;
-    let refl_m   = 0.251 * lambda;
-    let space_m  = 0.190 * lambda;
-
-    let driven_ft = driven_m * 3.28084;
-    let refl_ft   = refl_m * 3.28084;
-    let space_ft  = space_m * 3.28084;
-
-    document.getElementById("out").innerHTML = `
-        <b>Driven Element:</b> ${driven_m.toFixed(3)} m (${driven_ft.toFixed(2)} ft)<br>
-        <b>Reflector:</b> ${refl_m.toFixed(3)} m (${refl_ft.toFixed(2)} ft)<br>
-        <b>Spacing:</b> ${space_m.toFixed(3)} m (${space_ft.toFixed(2)} ft)
-    `;
+// meters → feet + fractional inches (1/16")
+function toFeetInches(m) {
+  let totalInches = m * 39.3701;
+  let feet = Math.floor(totalInches / 12);
+  let inches = totalInches % 12;
+  let frac = Math.round((inches - Math.floor(inches)) * 16);
+  if (frac === 16) { inches += 1; frac = 0; }
+  return `${feet} ft ${Math.floor(inches)} ${frac}/16 in`;
 }
-</script>
 
+function calcGain(nDir) {
+  if (nDir === 0) return 2.1;
+  if (nDir === 1) return 4.0;
+  if (nDir === 2) return 5.0;
+  return 5.5; // 3 directors
+}
+
+function calculate() {
+  let fMHz = parseFloat(document.getElementById("freq").value);
+  let nDir = parseInt(document.getElementById("directors").value);
+
+  let c = 299792458;
+  let lambda = c / (fMHz * 1e6);
+
+  let drivenLen = 0.48 * lambda;
+  let directorLen = 0.45 * lambda;
+  let spacing = 0.10 * lambda; // between verticals
+
+  let totalHeight = nDir === 0 ? 0 : nDir * spacing;
+  let gain = calcGain(nDir);
+
+  document.getElementById("gainLine").innerHTML =
+    `${gain.toFixed(1)} dBi — passive vertical array with ${nDir} director(s) at ${fMHz.toFixed(3)} MHz`;
+
+  document.getElementById("summary").innerHTML = `
+    <b>Passive Vertical Array</b><br>
+    Frequency: ${fMHz.toFixed(3)} MHz<br>
+    Wavelength: ${lambda.toFixed(3)} m = ${toFeetInches(lambda)}<br>
+    Driven Element Length: ${drivenLen.toFixed(3)} m = ${toFeetInches(drivenLen)}<br>
+    Director Count: ${nDir}<br>
+    Total Vertical Spacing (boom height): ≈ ${totalHeight.toFixed(3)} m = ${toFeetInches(totalHeight)}
+  `;
+
+  let html = `<table>
+    <tr>
+      <th>Element</th>
+      <th>Length (m)</th>
+      <th>Length (ft/in)</th>
+      <th>Spacing from Driven (m)</th>
+      <th>Spacing from Driven (ft/in)</th>
+    </tr>`;
+
+  html += `<tr>
+      <td>Driven</td>
+      <td>${drivenLen.toFixed(3)}</td>
+      <td>${toFeetInches(drivenLen)}</td>
+      <td>0.000</td>
+      <td>0 ft 0 0/16 in</td>
+    </tr>`;
+
+  for (let i = 1; i <= nDir; i++) {
+    let dist = i * spacing;
+    html += `<tr>
+      <td>Director ${i}</td>
+      <td>${directorLen.toFixed(3)}</td>
+      <td>${toFeetInches(directorLen)}</td>
+      <td>${dist.toFixed(3)}</td>
+      <td>${toFeetInches(dist)}</td>
+    </tr>`;
+  }
+
+  html += `</table>`;
+  document.getElementById("tableContainer").innerHTML = html;
+}
+
+function downloadFile() {
+  let fMHz = parseFloat(document.getElementById("freq").value);
+  let nDir = parseInt(document.getElementById("directors").value);
+  let c = 299792458;
+  let lambda = c / (fMHz * 1e6);
+  let gain = calcGain(nDir);
+
+  let summaryText = document.getElementById("summary").innerText;
+
+  let text =
+`Passive Vertical Design Calculator — KG5IEF
+Generated: ${new Date().toLocaleString()}
+-------------------------------------
+
+${summaryText}
+
+-------------------------------------
+Build Summary
+Frequency: ${fMHz.toFixed(3)} MHz
+Wavelength: ${lambda.toFixed(3)} m = ${toFeetInches(lambda)}
+Directors: ${nDir}
+Estimated Gain: ${gain.toFixed(1)} dBi
+Director Length: 0.45 λ
+Driven Length: 0.48 λ
+-------------------------------------
+`;
+
+  let blob = new Blob([text], {type: "text/plain"});
+  let link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "Passive_Vertical_Design_Calculator.txt";
+  link.click();
+}
+
+document.getElementById("freq").addEventListener("input", calculate);
+document.getElementById("directors").addEventListener("change", calculate);
+
+calculate();
+</script>
 </body>
 </html>
